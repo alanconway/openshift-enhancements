@@ -97,8 +97,8 @@ This may be added as a feature in future proposals.
 ``` yaml
   outputs:
     - name: offsite
-	  type: kafka
-	  limit:
+      type: kafka
+      limit:
         maxRecordsPerSecond: 10M
 ```
 
@@ -109,7 +109,7 @@ This may be added as a feature in future proposals.
 ``` yaml
   outputs:
     - name: default
-	  limit:
+      limit:
         maxRecordsPerSecond: 10M
 ```
 
@@ -119,10 +119,10 @@ This may be added as a feature in future proposals.
 
 ``` yaml
   inputs:
-	- application:
-		selector:
-		  matchLabels: { boring: true }
-	    limitPerContainer:
+    - application:
+        selector:
+          matchLabels: { boring: true }
+        limitPerContainer:
           maxRecordsPerSecond: 0
 ```
 
@@ -136,30 +136,30 @@ This may be added as a feature in future proposals.
 
 ``` yaml
   inputs:
-	- application:
-		namespaces: [ boring, tedious, tiresome ]
-	    limitPerContainer:
-		  maxRecordsPerSecond: 10
     - application:
-		namespaces: [ important, exciting ]
-	    limitPerContainer:
-		  maxRecordsPerSecond: 1000
+        namespaces: [ boring, tedious, tiresome ]
+        limitPerContainer:
+          maxRecordsPerSecond: 10
+    - application:
+        namespaces: [ important, exciting ]
+        limitPerContainer:
+          maxRecordsPerSecond: 1000
 ```
 
 #### Set a per-container limit for containers with certain labels
 
 ``` yaml
   inputs:
-	- application:
-		selector:
-		  matchLabels: { importance: low }
-        limitPerContainer:
-		  maxRecordsPerSecond: 10
     - application:
-	    selector:
-	  	  matchLabels: { importance: high }
+        selector:
+          matchLabels: { importance: low }
         limitPerContainer:
-		  maxRecordsPerSecond: 1000
+          maxRecordsPerSecond: 10
+    - application:
+        selector:
+          matchLabels: { importance: high }
+        limitPerContainer:
+          maxRecordsPerSecond: 1000
 ```
 
 ### API Extensions
@@ -221,4 +221,3 @@ None
 Complexity
 ## Alternatives
 None proposed
-
