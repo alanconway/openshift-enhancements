@@ -9,7 +9,7 @@ approvers:
 api-approvers: 
   - "@jcantrill"
 creation-date: 2023-11-03
-last-updated:  2023-11-03
+last-updated:  2024-02-15
 tracking-link:
   - https://issues.redhat.com/browse/LOG-2155
 see-also: []
@@ -69,7 +69,7 @@ More complex filters MAY be added in future, but not as part of this enhancement
 ### API Extensions
 
 A new `filters` section in the `ClusterLogForwarder` allows named filters to be defined.
-This proposal defines two types of filter "prune" and "drop".
+This proposal defines the following filter types: prune, drop.
 
 #### Prune filters
 
@@ -80,14 +80,18 @@ A "prune" filter removes fields from each record passing through the filter.
 ``` yaml
 spec:
   filters:
-  - name: ""        # User selects filter name
+  - name: ""      # User defined name used as a pipeline filterRef
     type: prune
     prune:
       in: []      # Array of field paths, remove fields in the array.
       notIn: []   # Array of field paths, remove all fields that are NOT in the array.
 ```
 
+**Note**: `in` and `notIn` entries must match regex `^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$`
+
 ##### Examples
+
+The following removes the `kubernetes.flat_labels` field and all other fields except `message` and the remaining `kubernetes` fields
 
 ``` yaml
   spec:
@@ -95,11 +99,11 @@ spec:
     - name: foo
       type: prune
       prune:
-		notIn: [.message, .kubernetes]   # Keep only the message and kubernetes fields.
         in: [.kubernetes.flat_labels]    # Prune the kubernetes.flat_labels sub-field.
+        notIn: [.message, .kubernetes]   # Keep only the message and kubernetes fields.
     pipelines:
     - name: bar
-		filterRefs: ["foo"]
+    filterRefs: ["foo"]
 ```
 
 #### Drop filters
@@ -112,25 +116,29 @@ Each test contains a sequence of conditions, all conditions must be true for the
 ``` yaml
 spec:
   filters:
-  - name:             # Provided by the user
+  - name:             # User defined name used as a pipeline filterRef
     type: drop
     drop:
       - test:
-        - field:      # JSON path to the field
-		  # Requires exactly one of the following conditions.
-          matches:    # regular expression match
-          notMatches: # regular expression does not match
+        - field:      # path to the field to evaluate
+          # Requires exactly one of the following conditions.
+          matches:    # regular expression to match against the value of the field
+          notMatches: # regular expression to not match against the value of the field
 ```
 
-Note:
+**Note**:
 - If _all_ conditions in a test are true, the test passes.
 - If _any_ test in the drop filter passes, the record is dropped.
 - If there is an error evaluating a condition (e.g. a missing field), that condition evaluates to false.
   Evaluation continues as normal.
+  `field` value must match regex `^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$`
+  only one of `matches` or `notMatches` may be defined for a test
 
 The drop filter is equivalent to a boolean OR of AND clauses. Any boolean expression can be reduced to this form.
 
 ##### Example
+
+The following example keeps only log messages from the "very-important" kubernetes namespace which do not have a log level of 'warning', 'error' or 'critical'.
 
 ``` yaml
 filters:
@@ -138,19 +146,21 @@ filters:
     type: drop
     drop:
       - tests:
-		- field: .kubernetes.namespace_name
-		  notMatches: "very-important"  # Keep everything from this namespace.
-		- field: .level # Keep important levels
-		  matches: "warning|error|critical"
+        - field: .kubernetes.namespace_name
+            notMatches: "very-important"  # Keep everything from this namespace.
+        - field: .level # Keep unimportant levels
+          matches: "warning|error|critical"
 ```
 
 ### Implementation Details
 
-### JSON path
+### Field path
 
 Need to document the rules for field paths, these are a subset of the JSON path spec.
 In fact we will use the same subset as Vector does, but we should describe the rules explicitly
 and not refer to vector docs, so we don't create assumptions in the API about the underlying collector.
+
+All field paths must match the regex `^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$`
 
 ### Metrics
 
